@@ -1,0 +1,8 @@
+path: /Users/kaloyan/Code/Project3.1/Image_Data_Augmentation/yolo/data/
+train: train/images
+val: val/images
+test: test/images
+
+names:
+  0: weed
+  1: onion
