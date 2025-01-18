@@ -1,7 +1,8 @@
 from ultralytics import YOLO
 import torch
+import os
 
-def train_model(weights, data, img_size, epochs, batch_size):
+def train_model(weights, data, img_size, epochs, batch_size, device, name):
     """
     Train a YOLO model.
     
@@ -11,21 +12,22 @@ def train_model(weights, data, img_size, epochs, batch_size):
         img_size (int): Image size for training.
         epochs (int): Number of epochs.
         batch_size (int): Batch size.
+        device (torch.device): Device to run the training on (CPU or CUDA).
     """
     # Load the YOLO model
-    model = YOLO(weights)
-    
+    model = YOLO(weights).to(device)
+
     # Train the model
     model.train(
         data=data,          
         imgsz=img_size,     
         epochs=epochs,     
         batch=batch_size,   
-        name="weed_detection" 
+        name=name 
     )
     print("Training completed. Check 'runs/train/weed_detection' for results.")
 
-def validate_model(weights, data, img_size):
+def validate_model(weights, data, img_size, device):
     """
     Validate the YOLO model on the validation dataset.
     
@@ -33,35 +35,31 @@ def validate_model(weights, data, img_size):
         weights (str): Path to the trained weights file (e.g., best.pt).
         data (str): Path to dataset.yaml.
         img_size (int): Image size for validation.
+        device (torch.device): Device to run the training on (CPU or CUDA).
     """
     # Load the model
-    model = YOLO(weights)
+    model = YOLO(weights).to(device)
     
     # Validate the model
     results = model.val(
         data=data,          
         imgsz=img_size,     
-        split="val"       
+        split="valid"       
     )
-    print("Validation completed. Results:")
-    print(f"Precision: {results.metrics.precision:.3f}")
-    print(f"Recall: {results.metrics.recall:.3f}")
-    print(f"mAP@0.5: {results.metrics.map50:.3f}")
-    print(f"mAP@0.5:0.95: {results.metrics.map:.3f}")
 
-def test_model(weights, data, img_size, conf_thresh, iou_thresh):
+def test_model(weights, data, img_size, conf_thresh, iou_thresh, device):
     """
     Test a YOLO model on the test dataset.
     
     Args:
         weights (str): Path to the trained weights file (e.g., best.pt).
-        data (str): Path to dataset.yaml.
+        data (str): Path to dataset.yaml.   
         img_size (int): Image size for inference.
         conf_thresh (float): Confidence threshold.
         iou_thresh (float): IOU threshold for NMS.
     """
     # Load the model
-    model = YOLO(weights)
+    model = YOLO(weights).to(device)
     
     # Run the test
     results = model.val(
@@ -69,13 +67,9 @@ def test_model(weights, data, img_size, conf_thresh, iou_thresh):
         imgsz=img_size,     
         conf=conf_thresh,   
         iou=iou_thresh,     
-        split="test"        
+        split="test",
     )
-    print("Test completed. Results:")
-    print(f"Precision: {results.metrics.precision:.3f}")
-    print(f"Recall: {results.metrics.recall:.3f}")
-    print(f"mAP@0.5: {results.metrics.map50:.3f}")
-    print(f"mAP@0.5:0.95: {results.metrics.map:.3f}")
+
 
 def print_logo():
     logo = """
@@ -102,22 +96,37 @@ if __name__ == "__main__":
             exit()
         print("Invalid mode. Please choose from 'train', 'val', or 'test'.")
         mode = input("Please enter the mode to run (train, val, test): ").strip().lower()
-    
+
 
     # Common parameters
     weights = "yolo\yolov11n.pt"  # Path to weights or pre-trained model
     data = "WeedCrop\data.yaml"  # Path to dataset configuration
     img_size = 416  # Image size for training and testing
 
+    # Get the model name if training    
+    if mode == "train":
+        name = input("Please enter the name of the model: ").strip().lower()
+
+    # ask for which model to use for validation and testing
+    elif mode == "test" or mode == "val":
+        weights = input("Please enter the path to the weights file: ").strip().lower()
+
     print(f"Running in {mode} mode...\n")
+
+    # Check if CUDA is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}\n")
 
     if mode == "train":     
         epochs = 50
         batch_size = 32
-        train_model(weights, data, img_size, epochs, batch_size)
+        train_model(weights, data, img_size, epochs, batch_size, device, name)
     elif mode == "val":
-        validate_model(weights, data, img_size)
+        validate_model(weights, data, img_size, device)
     elif mode == "test":
         conf_thresh = 0.25
         iou_thresh = 0.45
-        test_model(weights, data, img_size, conf_thresh, iou_thresh)
+        test_model(weights, data, img_size, conf_thresh, iou_thresh, device)
+
+
+#TODO: Tain on augmented data (for each combination), then validate on the same non-augmented data then test on unseen data
