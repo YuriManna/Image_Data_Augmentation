@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import torch
-import os
+import albumentations as A
+
 
 def train_model(weights, data, img_size, epochs, batch_size, device, name):
     """
@@ -16,36 +17,17 @@ def train_model(weights, data, img_size, epochs, batch_size, device, name):
     """
     # Load the YOLO model
     model = YOLO(weights).to(device)
-
+    
+    
     # Train the model
     model.train(
         data=data,          
         imgsz=img_size,     
         epochs=epochs,     
         batch=batch_size,   
-        name=name 
+        name=name,
     )
     print("Training completed. Check 'runs/train/weed_detection' for results.")
-
-def validate_model(weights, data, img_size, device):
-    """
-    Validate the YOLO model on the validation dataset.
-    
-    Args:
-        weights (str): Path to the trained weights file (e.g., best.pt).
-        data (str): Path to dataset.yaml.
-        img_size (int): Image size for validation.
-        device (torch.device): Device to run the training on (CPU or CUDA).
-    """
-    # Load the model
-    model = YOLO(weights).to(device)
-    
-    # Validate the model
-    results = model.val(
-        data=data,          
-        imgsz=img_size,     
-        split="valid"       
-    )
 
 def test_model(weights, data, img_size, conf_thresh, iou_thresh, device):
     """
@@ -88,15 +70,14 @@ if __name__ == "__main__":
     print_logo()
 
     # Get the mode from the user
-    mode = input("Please enter the mode to run (train, val, test): ").strip().lower()
+    mode = input("Please enter the mode to run (train, test): ").strip().lower()
     # Validate the input
-    while mode not in ["train", "val", "test"]:
+    while mode not in ["train", "test"]:
         if mode == "exit":
             print("Exiting the program.")
             exit()
-        print("Invalid mode. Please choose from 'train', 'val', or 'test'.")
-        mode = input("Please enter the mode to run (train, val, test): ").strip().lower()
-
+        print("Invalid mode. Please choose from 'train' or 'test'.")
+        mode = input("Please enter the mode to run (train, test): ").strip().lower()
 
     # Common parameters
     weights = "yolo\yolov11n.pt"  # Path to weights or pre-trained model
@@ -108,7 +89,7 @@ if __name__ == "__main__":
         name = input("Please enter the name of the model: ").strip().lower()
 
     # ask for which model to use for validation and testing
-    elif mode == "test" or mode == "val":
+    elif mode == "test":
         weights = input("Please enter the path to the weights file: ").strip().lower()
 
     print(f"Running in {mode} mode...\n")
@@ -118,15 +99,12 @@ if __name__ == "__main__":
     print(f"Using device: {device}\n")
 
     if mode == "train":     
-        epochs = 50
-        batch_size = 32
-        train_model(weights, data, img_size, epochs, batch_size, device, name)
-    elif mode == "val":
-        validate_model(weights, data, img_size, device)
+        epochs = 70
+        batch_size = 64
+        train_model(weights, data, img_size, epochs, batch_size, device, name, )
     elif mode == "test":
         conf_thresh = 0.25
         iou_thresh = 0.45
         test_model(weights, data, img_size, conf_thresh, iou_thresh, device)
 
-
-#TODO: Tain on augmented data (for each combination), then validate on the same non-augmented data then test on unseen data
+#TODO: Tain on augmented data (for each combination) then test on the same unseen data
