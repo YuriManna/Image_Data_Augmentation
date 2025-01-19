@@ -1,0 +1,5 @@
+Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100%|██████████| 8/8 [00:01<00:00,  6.09it/s]
+all        118        781      0.714       0.71      0.725      0.416
+crop         16         85      0.795      0.729      0.797       0.48
+weed        109        696      0.634      0.691      0.653      0.353
+Speed: 0.8ms preprocess, 5.3ms inference, 0.0ms loss, 1.6ms postprocess per image
